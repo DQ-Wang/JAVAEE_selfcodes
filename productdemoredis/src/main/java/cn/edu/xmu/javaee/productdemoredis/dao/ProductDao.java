@@ -28,6 +28,9 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
 import static cn.edu.xmu.javaee.core.model.Constants.PLATFORM;
 /**
  * @author Ming Qiu
@@ -80,7 +83,7 @@ public class ProductDao{
      * @return Product对象，不关联的Product
      */
     public Product findSimpleProductById(Long shopId, Long productId) throws BusinessException {
-        Product product = CloneFactory.copy(new Product(), this.getProductSnapshot(shopId, productId));
+        Product product = this.getProductSnapshot(shopId, productId);
         log.debug("findSimpleProductById: product = {}", product);
         return product;
     }
@@ -182,7 +185,7 @@ public class ProductDao{
      * @throws DataAccessException
      */
     private Product getFullProduct(@NotNull Product baseProduct) throws DataAccessException {
-        Product product = CloneFactory.copy(new Product(), baseProduct);
+        Product product = deepCopyProduct(baseProduct);
         log.debug("getFullProduct: product = {}",product);
         List<OnSale> latestOnSale = this.onSaleDao.getLatestOnSale(baseProduct.getId());
         product.setOnSaleList(latestOnSale);
@@ -256,10 +259,44 @@ public class ProductDao{
         if (product == null || product.getId() == null){
             return;
         }
-        Product snapshot = CloneFactory.copy(new Product(), product);
+        Product snapshot = deepCopyProduct(product);
         snapshot.setOnSaleList(null);
         snapshot.setOtherProduct(null);
         redisUtil.set(buildProductKey(product.getId()), snapshot, PRODUCT_CACHE_TIMEOUT);
+    }
+
+    private Product deepCopyProduct(Product source) {
+        if (source == null) {
+            return null;
+        }
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.registerModule(new JavaTimeModule());
+            String json = mapper.writeValueAsString(source);
+            return mapper.readValue(json, Product.class);
+        } catch (Exception e) {
+            log.error("Failed to deep copy Product: {}", e.getMessage());
+            // Fallback: create new Product and copy fields manually
+            return Product.builder()
+                    .id(source.getId())
+                    .shopId(source.getShopId())
+                    .name(source.getName())
+                    .originalPrice(source.getOriginalPrice())
+                    .weight(source.getWeight())
+                    .barcode(source.getBarcode())
+                    .unit(source.getUnit())
+                    .originPlace(source.getOriginPlace())
+                    .commissionRatio(source.getCommissionRatio())
+                    .freeThreshold(source.getFreeThreshold())
+                    .status(source.getStatus())
+                    .creatorId(source.getCreatorId())
+                    .creatorName(source.getCreatorName())
+                    .modifierId(source.getModifierId())
+                    .modifierName(source.getModifierName())
+                    .gmtCreate(source.getGmtCreate())
+                    .gmtModified(source.getGmtModified())
+                    .build();
+        }
     }
 
     private Product getCachedProduct(Long productId){
@@ -306,7 +343,7 @@ public class ProductDao{
             if (cached == null){
                 return null;
             }
-            products.add(CloneFactory.copy(new Product(), cached));
+            products.add(deepCopyProduct(cached));
         }
         return products;
     }
