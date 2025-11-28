@@ -1,0 +1,85 @@
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    env:
+      show-values: always
+    health:
+      show-details: always
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+spring:
+  datasource:
+    #JDBC驱动
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    #数据库服务器url
+    url: jdbc:mysql://mysql:3306/oomall_demo?serverTimezone=Asia/Shanghai
+    #数据库服务器用户名和密码
+    username: demouser
+    password: 123456
+    #数据库连接池
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      #初始化时建立物理连接的个数
+      initial-size: 3
+      #最小连接池数量
+      min-idle: 3
+      #最大连接池数量
+      max-active: 100
+      #获取连接时最大等待时间
+      max-wait: 60000
+      #配置监控页面访问登录名及密码
+      stat-view-servlet:
+        login-username: admin
+        login-password: 123456
+        enabled: true
+        url-pattern: /druid/*
+        allow:
+      filter:
+        stat:
+          #是否开启慢sql查询监控
+          log-slow-sql: true
+          #慢SQL执行时间
+          slow-sql-millis: 100
+      validation-query: select 1
+  jackson:
+    #JSON的时间数据的时区
+    time-zone: GMT+8
+  application:
+    name: ProductDemoRedis
+  messages:
+    basename: "i18n/messages"
+    fallback-to-system-locale: false
+    encoding: UTF-8
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+    database: mysql
+  data:
+    redis:
+      host: redis
+      port: 6379
+      database: 0
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
+
+server:
+  port: 8080
+  tomcat:
+    threads:
+      #最大工作线程数
+      max: 2000
+      #最小工作线程数
+      min-spare: 100
+
+
