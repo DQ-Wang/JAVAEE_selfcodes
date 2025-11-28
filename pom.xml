@@ -22,7 +22,6 @@
 
     <modules>
         <module>core</module>
-        <module>productdemoaop</module>
         <module>productdemoredis</module>
     </modules>
 
