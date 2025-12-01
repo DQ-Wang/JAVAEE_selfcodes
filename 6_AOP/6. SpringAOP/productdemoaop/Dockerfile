@@ -6,6 +6,6 @@ MAINTAINER mingqiu mingqiu@xmu.edu.cn
 WORKDIR /app
 ARG JAR_FILE
 ADD ${JAR_FILE} /app/app.jar
-EXPOSE 8080
+EXPOSE 10026
 ENTRYPOINT ["java", "-jar", "app.jar"]
 CMD ["--spring.datasource.url=jdbc:mysql://mysql:3306/oomall_demo?serverTimezone=Asia/Shanghai","--spring.datasource.username=demouser", "--spring.datasource.password=123456","--server.tomcat.threads.max=300","--spring.datasource.druid.max-active=300","--spring.datasource.druid.initial-size=100","--spring.datasource.druid.min-idle=100","--spring.datasource.druid.stat-view-servlet.login-password=123456"]
