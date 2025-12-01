@@ -1,0 +1,71 @@
+# ========================== 系统/编辑器通用缓存 ==========================
+# 操作系统临时文件
+*.swp
+*.swo
+*~
+.DS_Store        # MacOS 系统文件
+Thumbs.db        # Windows 系统文件
+*.tmp
+*.bak
+*.log
+*.cache
+
+# 编辑器/IDE 配置（重点：IDEA 的 .idea 目录）
+.idea/           # IDEA 专属配置目录（核心忽略项）
+*.iml            # IDEA 模块文件
+*.iws            # IDEA 工作区文件
+out/             # IDEA 编译输出目录
+.project         # Eclipse 配置文件
+.classpath       # Eclipse 配置文件
+.settings/       # Eclipse 配置目录
+.vscode/         # VS Code 配置目录
+*.suo            # Visual Studio 配置文件
+*.user           # Visual Studio 用户配置
+
+# ========================== Java/Maven 构建产物 ==========================
+# Maven 编译/打包产物
+target/          # Maven 核心输出目录（编译后的 class、jar、镜像构建文件等）
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Gradle 产物（若项目用 Gradle 可保留）
+.gradle/
+build/
+gradle-app.setting
+!gradle-wrapper.jar
+*.jar.original
+
+# Java 编译临时文件
+*.class
+*.jar
+*.war
+*.ear
+*.jmod
+
+# ========================== 容器化/云部署相关 ==========================
+# Docker 临时文件
+docker-compose.override.yml
+*.dockerignore
+.dockerignore
+# 镜像构建临时日志/缓存
+docker-build.log
+
+# ========================== 项目自定义忽略项（可自行补充） ==========================
+# 例如：配置文件（若包含敏感信息，如数据库密码、云密钥）
+*.properties
+!application-example.properties  # 保留示例配置，忽略实际配置
+*.yml
+!application-example.yml
+# 日志文件
+logs/
+*.log
+# 临时上传/下载文件
+upload/
+download/
