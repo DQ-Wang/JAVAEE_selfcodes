@@ -57,6 +57,10 @@ public class ProductDao{
      * @param name 名称
      * @return Product对象列表，带关联的Product返回
      */
+    /**
+     * 仅查“商品基本信息”，不加载 onSale / otherProduct。
+     * 用于后台/列表场景，先查 DB 同时写入缓存，方便下次直接命中缓存。
+     */
     public List<Product> retrieveSimpleProductByName(Long shopId, String name) throws BusinessException {
         List<Product> productList = new ArrayList<>();
         List<ProductPo> productPoList;
@@ -81,6 +85,9 @@ public class ProductDao{
      * @param shopId 商铺id
      * @param productId 产品id
      * @return Product对象，不关联的Product
+     */
+    /**
+     * 查询“单个商品基本信息”，优先从缓存读取；未命中时落库加载，并写入缓存。
      */
     public Product findSimpleProductById(Long shopId, Long productId) throws BusinessException {
         Product product = this.getProductSnapshot(shopId, productId);
@@ -146,6 +153,10 @@ public class ProductDao{
      * @return
      * @throws BusinessException
      */
+    /**
+     * 查询“商品全量信息”（含最新 OnSale、关联商品）。
+     * 先读取基础信息（优先缓存），再补全关联数据。
+     */
     public Product findById(Long shopId, Long productId) throws BusinessException {
         Product baseProduct = this.getProductSnapshot(shopId, productId);
         Product product = this.getFullProduct(baseProduct);
@@ -158,6 +169,10 @@ public class ProductDao{
      * @param shopId 商铺id 为PLATFROM则在全系统寻找，否则在商铺内寻找
      * @param name 名称
      * @return Product对象列表，带关联的Product返回
+     */
+    /**
+     * 查询“商品全量信息列表”，用于前台搜索。
+     * 逻辑：先查 DB → 缓存基础信息 → 填充 onSale / 关联商品。
      */
     public List<Product> retrieveByName(Long shopId, String name) throws BusinessException {
         List<Product> productList = new ArrayList<>();
@@ -180,9 +195,13 @@ public class ProductDao{
 
     /**
      * 获得关联的对象
-     * @param baseProduct 基础Product对象
+     * @param productPo product po对象
      * @return 关联的Product对象
      * @throws DataAccessException
+     */
+    /**
+     * 在已有基础信息的前提下，补齐 onSale & otherProduct，构成“完整商品”。
+     * 注意：会深拷贝基础数据，避免缓存对象被篡改。
      */
     private Product getFullProduct(@NotNull Product baseProduct) throws DataAccessException {
         Product product = deepCopyProduct(baseProduct);
@@ -198,9 +217,15 @@ public class ProductDao{
 
     /**
      * 获得相关的产品对象
-     * @param productId product id
+     * @param productPo product po对象
      * @return 相关产品对象列表
      * @throws DataAccessException
+     */
+    /**
+     * 查询与当前商品相关的其他商品：
+     *  1. 优先命中缓存（商品 -> 关联商品 ID 列表）；
+     *  2. 未命中则通过 Goods 表查出关联关系，再批量查 ProductPo；
+     *  3. 新结果写回缓存。
      */
     private List<Product> retrieveOtherProduct(Long productId) throws DataAccessException {
         List<Long> cachedRelationIds = getCachedRelationIds(productId);
@@ -243,6 +268,9 @@ public class ProductDao{
         return productPo;
     }
 
+    /**
+     * 查询“商品基础信息”，优先从缓存读取；未命中时落库，并缓存一份快照。
+     */
     private Product getProductSnapshot(Long shopId, Long productId){
         Product cached = getCachedProduct(productId);
         if (cached != null){
@@ -255,11 +283,18 @@ public class ProductDao{
         return product;
     }
 
+    /**
+     * 缓存商品基础信息（不包含关联对象）。
+     * 参考最佳实践：直接使用 CloneFactory 复制对象，避免手动 Builder 的繁琐。
+     * 注意：不缓存 onSaleList 和 otherProduct，避免缓存过大和一致性问题。
+     */
     private void cacheProduct(Product product){
         if (product == null || product.getId() == null){
             return;
         }
-        Product snapshot = deepCopyProduct(product);
+        // 使用 CloneFactory 复制对象（字段级复制，不是 JSON 序列化）
+        Product snapshot = CloneFactory.copy(new Product(), product);
+        // 确保不缓存关联对象，避免缓存过大和一致性问题
         snapshot.setOnSaleList(null);
         snapshot.setOtherProduct(null);
         redisUtil.set(buildProductKey(product.getId()), snapshot, PRODUCT_CACHE_TIMEOUT);
@@ -299,6 +334,9 @@ public class ProductDao{
         }
     }
 
+    /**
+     * 封装从 Redis 读取商品快照的逻辑。
+     */
     private Product getCachedProduct(Long productId){
         return (Product) redisUtil.get(buildProductKey(productId));
     }
@@ -317,6 +355,9 @@ public class ProductDao{
     }
 
     @SuppressWarnings("unchecked")
+    /**
+     * 读取“商品 -> 关联商品 ID 列表”缓存；null 代表缓存缺失。
+     */
     private List<Long> getCachedRelationIds(Long productId){
         Object cache = redisUtil.get(buildProductRelationKey(productId));
         if (cache == null){
@@ -330,6 +371,9 @@ public class ProductDao{
         redisUtil.set(buildProductRelationKey(productId), (Serializable) new ArrayList<>(relationIds), PRODUCT_RELATION_TIMEOUT);
     }
 
+    /**
+     * 根据 ID 列表构造关联商品列表：全部命中缓存才返回；任一缺失则返回 null。
+     */
     private List<Product> buildProductsFromCache(List<Long> ids){
         if (ids == null){
             return null;
