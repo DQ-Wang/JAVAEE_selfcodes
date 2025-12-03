@@ -292,8 +292,26 @@ public class ProductDao{
         if (product == null || product.getId() == null){
             return;
         }
-        // 使用 CloneFactory 复制对象（字段级复制，不是 JSON 序列化）
-        Product snapshot = CloneFactory.copy(new Product(), product);
+        // 使用 builder 复制对象字段（浅拷贝）
+        Product snapshot = Product.builder()
+                .id(product.getId())
+                .shopId(product.getShopId())
+                .name(product.getName())
+                .originalPrice(product.getOriginalPrice())
+                .weight(product.getWeight())
+                .barcode(product.getBarcode())
+                .unit(product.getUnit())
+                .originPlace(product.getOriginPlace())
+                .commissionRatio(product.getCommissionRatio())
+                .freeThreshold(product.getFreeThreshold())
+                .status(product.getStatus())
+                .creatorId(product.getCreatorId())
+                .creatorName(product.getCreatorName())
+                .modifierId(product.getModifierId())
+                .modifierName(product.getModifierName())
+                .gmtCreate(product.getGmtCreate())
+                .gmtModified(product.getGmtModified())
+                .build();
         // 确保不缓存关联对象，避免缓存过大和一致性问题
         snapshot.setOnSaleList(null);
         snapshot.setOtherProduct(null);
